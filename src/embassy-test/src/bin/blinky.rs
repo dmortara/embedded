@@ -3,6 +3,8 @@
  * Blinky for STM32F103C8T6 (a.k.a. Blue Pill)
  * Using embassy
  */
+#![deny(unsafe_code)]
+#![deny(warnings)]
 #![no_std]
 #![no_main]
 
