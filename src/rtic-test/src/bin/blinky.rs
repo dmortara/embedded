@@ -19,12 +19,6 @@ use stm32f1xx_hal::prelude::*;
 // System time interrupt every 300 ms
 systick_monotonic!(Mono, 300);
 
-// LED is on or off. It does not handle superposition :-)
-enum LedState {
-    On,  // gpio is high
-    Off, // gpio is low
-}
-
 //
 //  A blinky example using RTIC and defmt
 //
@@ -39,7 +33,6 @@ mod app {
     #[local] // Local context
     struct LocalContext {
         led: PC13<Output<PushPull>>, // Has and LED soldered permanently to this pin
-        led_state: LedState,
     }
 
     // Setup and initialization task.
@@ -74,28 +67,20 @@ mod app {
         blink::spawn().ok();
 
         // Return the shared and local context
-        (
-            SharedContext {},
-            LocalContext {
-                led,
-                led_state: LedState::Off,
-            },
-        )
+        (SharedContext {}, LocalContext { led })
     }
 
     // Turn the led on and off, show some RTT logs, encrease the entropy of the universe ...
-    #[task(local = [led, led_state])]
+    #[task(local = [led])]
     async fn blink(context: blink::Context) {
         loop {
-            match *context.local.led_state {
-                LedState::Off => {
+            match context.local.led.get_state() {
+                PinState::Low => {
                     context.local.led.set_high();
-                    *context.local.led_state = LedState::On;
                     info!("LED is On");
                 }
-                LedState::On => {
+                PinState::High => {
                     context.local.led.set_low();
-                    *context.local.led_state = LedState::Off;
                     info!("LED is Off");
                 }
             };
