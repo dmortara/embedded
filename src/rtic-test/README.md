@@ -1,5 +1,8 @@
 # RTIC blinking on Blue Pill #
 
+RTIC (Real Time Interrupt-driven Concurrency) provides an execution framework. It
+does not provide any Hardware Abstraction Layer (HAL)
+
 Minimal example blinking onboard LED
 
 This examples uses probe-rs and STLink v2.3 with the last available firmware version
