@@ -24,12 +24,16 @@ async fn main(_spawner: Spawner) {
     let mut led = Output::new(periferal.PC13, Level::High, Speed::Low);
 
     loop {
-        info!("high");
-        led.set_high();
+        match led.get_output_level() {
+            Level::Low => {
+                led.set_high();
+                info!("LED is On");
+            }
+            Level::High => {
+                led.set_low();
+                info!("LED is Off");
+            }
+        };
         Timer::after_millis(300).await; // Block (wait) for 300 ms
-
-        info!("low");
-        led.set_low();
-        Timer::after_millis(300).await;
     }
 }
