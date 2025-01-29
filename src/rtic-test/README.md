@@ -14,3 +14,5 @@ cargo build --bin blinky --release
 # Run (using RTT)
 cargo run --bin blinky --release
 ```
+
+[RTIC](https://rtic.rs/2/book/en/)

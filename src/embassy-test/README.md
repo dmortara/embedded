@@ -13,3 +13,5 @@ cargo build --bin blinky --release
 # Run (using RTT)
 cargo run --bin blinky --release
 ```
+
+[Embassy](https://embassy.dev/)
