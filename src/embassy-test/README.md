@@ -5,7 +5,7 @@ Embassy provides an execution framework and a Hardware Abstraction Layer (HAL)
 Minimal example blinking onboard LED
 
 This examples uses probe-rs and STLink v2.3 with the last available  firmware version
-at the time of writing.
+at the time of writing (to support RTT).
 
 ```bash
 # Build
