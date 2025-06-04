@@ -90,7 +90,7 @@ mod app {
         (SharedContext {}, LocalContext { led, adc1, analog })
     }
 
-    // Turn the led on and off, show some RTT logs, encrease the entropy of the universe ...
+    // Turn the led on and off, show some RTT logs, increase the entropy of the universe ...
     #[task(local = [led, adc1, analog])]
     async fn read_adc0_and_blink(context: read_adc0_and_blink::Context) {
         loop {
@@ -121,4 +121,13 @@ mod app {
             Mono::delay(300.millis()).await;
         }
     }
+
+    /// Read ADCs and send hid information to USB
+    #[task(binds = USB_HP_CAN_TX)]
+    fn write_usb(_: write_usb::Context) {
+        info!("USB reade to TX");
+    }
+
+    //   #[task(binds = USB_LP_CAN_RX)]
+    //    fn read_usb(_: read_usb::Context) {}
 }

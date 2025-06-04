@@ -21,10 +21,10 @@ embedded-hal = "1.0"
 
 stm32f1xx-hal = { version = "0.10", features = ["rt", "stm32f103", "medium"] }
 
-panic-probe = { version = "0.3", features = ["print-defmt"] }
+panic-probe = { version = "1.0.0", features = ["print-defmt"] }
 
-defmt = { version = "0.3" }
-defmt-rtt = { version = "0.4" }
+defmt = { version = "1.0.1" }
+defmt-rtt = { version ="1.0.0" }
 
 panic-rtt-target = { version = "0.2" }
 rtt-target = { version = "0.6" }

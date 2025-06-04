@@ -70,7 +70,7 @@ mod app {
         (SharedContext {}, LocalContext { led })
     }
 
-    // Turn the led on and off, show some RTT logs, encrease the entropy of the universe ...
+    // Turn the led on and off, show some RTT logs, increase the entropy of the universe ...
     #[task(local = [led])]
     async fn blink(context: blink::Context) {
         loop {
