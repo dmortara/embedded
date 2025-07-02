@@ -11,6 +11,10 @@
 use defmt::info;
 use embassy_executor::Spawner;
 use embassy_stm32::gpio::{Level, Output, Speed};
+use embassy_stm32::rcc;
+use embassy_stm32::rcc::{ADCPrescaler, AHBPrescaler, APBPrescaler, HseMode, Sysclk};
+use embassy_stm32::time::Hertz;
+use embassy_stm32::Config;
 use embassy_time::Timer;
 use {defmt_rtt as _, panic_probe as _};
 
@@ -19,9 +23,22 @@ use {defmt_rtt as _, panic_probe as _};
  */
 #[embassy_executor::main]
 async fn main(_spawner: Spawner) {
-    let periferal = embassy_stm32::init(Default::default());
-
     info!("Hello blinky");
+    let mut config = Config::default();
+
+    // High Speed External clock
+    config.rcc.hse = Some(rcc::Hse {
+        freq: Hertz(8_000_000),
+        mode: HseMode::Oscillator,
+    });
+
+    // @TODO: Review configuration to get same frequencies as with rtic-hid example
+    config.rcc.sys = Sysclk::HSE;
+    config.rcc.ahb_pre = AHBPrescaler::DIV2;
+    config.rcc.apb1_pre = APBPrescaler::DIV2;
+    config.rcc.adc_pre = ADCPrescaler::DIV4;
+
+    let periferal = embassy_stm32::init(config);
 
     let mut led = Output::new(periferal.PC13, Level::High, Speed::Low);
 
@@ -29,7 +46,7 @@ async fn main(_spawner: Spawner) {
         match led.get_output_level() {
             Level::Low => {
                 led.set_high();
-                info!("LED is On");
+                info!("LED is On ");
             }
             Level::High => {
                 led.set_low();
