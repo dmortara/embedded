@@ -1,6 +1,6 @@
 /*
  * 2025-01-08
- * ADCH and HID for STM32F103C8T6 (a.k.a. The Blue Pill)
+ * ADC and HID for STM32F103C8T6 (a.k.a. The Blue Pill)
  * using RTIC
  */
 #![deny(unsafe_code)]
