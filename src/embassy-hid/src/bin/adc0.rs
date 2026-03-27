@@ -2,6 +2,10 @@
  * 2025-07-01
  * ADC and HID for STM32F103C8T6 (a.k.a. Blue Pill)
  * Using embassy
+ *
+ * NOTE: 2026-03-27: The Hall effect I am using does not work propelly with a hight speed (12Mhz
+ *                   ADC bus). Currently running a 9Mhz ADC bus (72MHz / 8) and it seems to work
+ *                   ok. I have not tried a lower speed yet.
  */
 #![deny(unsafe_code)]
 #![deny(warnings)]
@@ -35,23 +39,22 @@ async fn main(_spawner: Spawner) {
 
     // High Speed External cristal oscillator (instead of the interal RC HSI)
     config.rcc.hse = Some(rcc::Hse {
-        freq: Hertz(8_000_000),
+        freq: Hertz(8_000_000), // 8MHz cristal
         mode: HseMode::Oscillator,
     });
 
-    // @TODO: Review configuration to get same frequencies as with rtic-hid example
-    // Recet and Clock Control configuration
+    // Reset and Clock Control configuration
     config.rcc.pll = Some(rcc::Pll {
         // Phase Locked Loop configuration
-        src: rcc::PllSource::HSE,
-        prediv: rcc::PllPreDiv::DIV2, // HSE / 2 = 4MHz
-        mul: rcc::PllMul::MUL9,       // 4MHz * 9 = 36MHz
+        src: rcc::PllSource::HSE,     // 8MHz from config.rcc.hse
+        prediv: rcc::PllPreDiv::DIV1, // HSE -> 8 / 1 = 8MHz
+        mul: rcc::PllMul::MUL9,       // 8MHz * 9 = 72MHz
     });
     config.rcc.sys = Sysclk::PLL1_P;
-    config.rcc.ahb_pre = AHBPrescaler::DIV1; // Adbanced High Performance Bus pre-scaler (PLL)
-    config.rcc.apb1_pre = APBPrescaler::DIV1; // Adbanced Periferal Bus 1 pre-scaler (PLL)
-    config.rcc.apb2_pre = APBPrescaler::DIV1; // Adbanced Periferal Bus 1 pre-scaler (PLL)
-    config.rcc.adc_pre = ADCPrescaler::DIV4; // Analog to Digiital Converter pre-scaler (PLL/4)
+    config.rcc.ahb_pre = AHBPrescaler::DIV1; // AHB = 72MHz (max 72MHz)
+    config.rcc.apb1_pre = APBPrescaler::DIV2; // APB1 = 72 / 2 = 36MHz (max 36MHz on STM32F1)
+    config.rcc.apb2_pre = APBPrescaler::DIV1; // APB2 = 72MHz (max 72MHz)
+    config.rcc.adc_pre = ADCPrescaler::DIV8; // ADC = 72 / 8 = 9MHz (max 14MHz)
 
     let mut periferal = embassy_stm32::init(config);
 
