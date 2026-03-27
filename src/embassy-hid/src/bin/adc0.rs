@@ -10,21 +10,26 @@
 
 use defmt::info;
 use embassy_executor::Spawner;
-use embassy_stm32::adc::Adc;
+use embassy_stm32::Config;
+use embassy_stm32::adc::{Adc, SampleTime};
 use embassy_stm32::gpio::{Level, Output, Speed};
+use embassy_stm32::peripherals::ADC1;
 use embassy_stm32::rcc;
 use embassy_stm32::rcc::{ADCPrescaler, AHBPrescaler, APBPrescaler, HseMode, Sysclk};
 use embassy_stm32::time::Hertz;
-use embassy_stm32::Config;
+use embassy_stm32::{adc, bind_interrupts};
 use embassy_time::Timer;
 use {defmt_rtt as _, panic_probe as _};
+
+bind_interrupts!(struct Irqs {
+    ADC1_2 => adc::InterruptHandler<ADC1>;
+});
 
 /**
  * A blinky example using embassy and defmt
  */
 #[embassy_executor::main]
 async fn main(_spawner: Spawner) {
-    info!("Hello ADC");
     // Setup clocks. Not required here but a good exercise.
     let mut config = Config::default();
 
@@ -50,13 +55,15 @@ async fn main(_spawner: Spawner) {
 
     let mut periferal = embassy_stm32::init(config);
 
+    info!("Hello ADC");
+
     let mut led = Output::new(periferal.PC13, Level::High, Speed::Low);
     // pa0 and pa1 are wired to ADC1 (STM32F1)
     let mut adc = Adc::new(periferal.ADC1);
 
     loop {
-        let x = adc.read(&mut periferal.PA0).await;
-        let y = adc.read(&mut periferal.PA1).await;
+        let x = adc.read(&mut periferal.PA0, SampleTime::CYCLES13_5).await;
+        let y = adc.read(&mut periferal.PA1, SampleTime::CYCLES13_5).await;
         match led.get_output_level() {
             Level::Low => {
                 led.set_high();
