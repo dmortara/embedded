@@ -28,17 +28,25 @@ async fn main(_spawner: Spawner) {
     // Setup clocks. Not required here but a good exercise.
     let mut config = Config::default();
 
-    // High Speed External cristal oscillator
+    // High Speed External cristal oscillator (instead of the interal RC HSI)
     config.rcc.hse = Some(rcc::Hse {
         freq: Hertz(8_000_000),
         mode: HseMode::Oscillator,
     });
 
     // @TODO: Review configuration to get same frequencies as with rtic-hid example
-    config.rcc.sys = Sysclk::HSE;
-    config.rcc.ahb_pre = AHBPrescaler::DIV2;
-    config.rcc.apb1_pre = APBPrescaler::DIV2;
-    config.rcc.adc_pre = ADCPrescaler::DIV4;
+    // Recet and Clock Control configuration
+    config.rcc.pll = Some(rcc::Pll {
+        // Phase Locked Loop configuration
+        src: rcc::PllSource::HSE,
+        prediv: rcc::PllPreDiv::DIV2, // HSE / 2 = 4MHz
+        mul: rcc::PllMul::MUL9,       // 4MHz * 9 = 36MHz
+    });
+    config.rcc.sys = Sysclk::PLL1_P;
+    config.rcc.ahb_pre = AHBPrescaler::DIV1; // Adbanced High Performance Bus pre-scaler (PLL)
+    config.rcc.apb1_pre = APBPrescaler::DIV1; // Adbanced Periferal Bus 1 pre-scaler (PLL)
+    config.rcc.apb2_pre = APBPrescaler::DIV1; // Adbanced Periferal Bus 1 pre-scaler (PLL)
+    config.rcc.adc_pre = ADCPrescaler::DIV4; // Analog to Digiital Converter pre-scaler (PLL/4)
 
     let mut periferal = embassy_stm32::init(config);
 
