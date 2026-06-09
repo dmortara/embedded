@@ -93,7 +93,6 @@ mod app {
 
         assert!(rcc.clocks.usbclk_valid());
 
-        // The monotonic timer need to match the system clock.
         Mono::start(ctx.core.SYST, 72_000_000);
 
         let mut gpioa = ctx.device.GPIOA.split(&mut rcc);
@@ -124,7 +123,10 @@ mod app {
             .unwrap()
             .build();
 
-        let adc1 = adc::Adc::new(ctx.device.ADC1, &mut rcc);
+        let mut adc1 = adc::Adc::new(ctx.device.ADC1, &mut rcc);
+        // T_239 = 239.5 ADC cycles @ 9 MHz ≈ 26.6 µs per channel. Overrides the HAL default of
+        // T_71 (~7.9 µs) which is insufficient for high-impedance Hall effect sensors to settle.
+        adc1.set_sample_time(adc::SampleTime::T_239);
 
         let pa0 = gpioa.pa0.into_analog(&mut gpioa.crl);
         let pa1 = gpioa.pa1.into_analog(&mut gpioa.crl);
