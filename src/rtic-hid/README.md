@@ -10,8 +10,8 @@ at the time of writing (to support RTT).
 
 Analog Digital Converter (ADC) using:
 
-* 10K Ohm potentiometer connected to _PA0_
-* Allegro __ALS31001LUAA__ Hall effect sensor connected to _PA1_
+* 10K Ohm potentiometer connected to __PA0__
+* Allegro _ALS31001LUAA_ Hall effect sensor connected to ___PA1___
 
 ```bash
 # Build
@@ -21,3 +21,19 @@ cargo run --bin adc0 --release
 ```
 
 [RTIC](https://rtic.rs/2/book/en/)
+
+## Summary ##
+
+  ┌──────────────────────────────┬─────────────────────┬──────────────────────────────┐
+  │          Component           │ Blue Pill provides? │           Keep it?           │
+  ├──────────────────────────────┼─────────────────────┼──────────────────────────────┤
+  │ Series resistor (100–1kΩ)    │ No                  │ Yes — protection + RC filter │
+  ├──────────────────────────────┼─────────────────────┼──────────────────────────────┤
+  │ Filter capacitor (10–100nF)  │ No                  │ Yes — noise rejection        │
+  ├──────────────────────────────┼─────────────────────┼──────────────────────────────┤
+  │ VCC decoupling cap on sensor │ No                  │ Yes — clean sensor supply    │
+  └──────────────────────────────┴─────────────────────┴──────────────────────────────┘
+
+  The combination of a ~1 kΩ resistor + 10–100 nF cap gives you a low-pass
+  corner around 1.6–16 kHz, which is more than fast enough for a Hall effect
+  reading updated every 300 ms, and well within the ADC's 9 MHz clock budget.
