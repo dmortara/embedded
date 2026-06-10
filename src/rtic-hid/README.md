@@ -29,14 +29,14 @@ cargo run --bin adc0 --release
 
 ● [ALS31001 3.3v Hall Effect](<https://www.allegromicro.com/-/media/files/datasheets/als31001-datasheet.pdf>)
 
-  VCC ──┬── sensor Pin 1
-        └── 100 nF ── GND (104M)    ← bypass cap here (C_BYPASS)
+  VCC ──┬── sensor Pin 1  
+        └── 100 nF ── GND (104M)    ← bypass cap here (C_BYPASS)  
 
   Pin 2 (GND)
 
-  Sensor Pin 3 (VOUT) ── 1 kΩ ── PA1    ← series resistor for ESD
-                                  │
-                                ≤ 0.22 nF (optional 221K) ── GND
+  Sensor Pin 3 (VOUT) ── 1 kΩ ── PA1    ← series resistor for ESD  
+                                  │  
+                                ≤ 0.22 nF (optional 221K) ── GND  
 
 ## Current settings ##
 
