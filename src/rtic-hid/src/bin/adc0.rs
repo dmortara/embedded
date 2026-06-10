@@ -96,14 +96,14 @@ mod app {
     #[shared]
     struct Shared {
         usb_dev: UsbDevice<'static, UsbBusType>,
-        hid: HIDClass<'static, UsbBusType>,
+        hid: HIDClass<'static, UsbBusType>, // To report the Joystick readings over USB
     }
 
     #[local]
     struct Local {
-        led: PC13<Output<PushPull>>,
+        led: PC13<Output<PushPull>>, // For development feedback
         adc1: adc::Adc<ADC1>,
-        pins: AnalogPins,
+        pins: AnalogPins, // To connect to the Hall effect sensors
     }
 
     #[init(local = [usb_bus: Option<UsbBusAllocator<UsbBusType>> = None])]
@@ -120,6 +120,7 @@ mod app {
 
         assert!(rcc.clocks.usbclk_valid());
 
+        // The monothonic timer needs the same frequnecy as the system clock
         Mono::start(ctx.core.SYST, 72_000_000);
 
         let mut gpioa = ctx.device.GPIOA.split(&mut rcc);
@@ -235,7 +236,7 @@ mod app {
                 hid.push_input(&report).ok();
             });
 
-            *ctx.local.tick += 1;
+            *ctx.local.tick += 1; // Used for console output and switching the LED
             if *ctx.local.tick >= 300 {
                 *ctx.local.tick = 0;
 
@@ -264,6 +265,8 @@ mod app {
                 }
             }
 
+            // Roughly 1ms + sampling time (≈ 28 µs/ch × 10 ch = 280 µs) ≈ 1.3 ms total per loop
+            // iteration.
             Mono::delay(1.millis()).await;
         }
     }
