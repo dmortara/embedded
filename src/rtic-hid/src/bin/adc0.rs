@@ -3,9 +3,18 @@
  *  Daniel Mortara <daniel.mortara@gmail.com>
  *  2026-06-10
  *
- * ADC + USB HID for STM32F103C8T6 (Blue Pill)
- * Samples all 10 ADC channels (PA0-PA7, PB0, PB1) and streams
- * the values to a PC as a vendor-defined HID report at 10 ms intervals.
+ * ADC + USB HID Joystick for STM32F103C8T6 (Blue Pill)
+ * Samples all 10 ADC channels (PA0-PA7, PB0, PB1) and reports them as a
+ * standard USB joystick (Generic Desktop, Joystick) at 1 kHz for XPlane 12.
+ *
+ * ADC clock: 9 MHz, sample time T_239 (~28 µs/ch, ~280 µs for 10 ch)
+ * USB HID poll: 1 ms (maximum rate for Full Speed USB)
+ * LED / console log: every 300 reports ≈ 300 ms (human-readable)
+ *
+ * Axis map (all 12-bit, range 0–4095):
+ *   X   = PA0  |  Y      = PA1  |  Z      = PA2
+ *   Rx  = PA3  |  Ry     = PA4  |  Rz     = PA5
+ *   Slider= PA6|  Dial   = PA7  |  Wheel  = PB0  |  Slider2 = PB1
  */
 #![deny(unsafe_code)]
 #![no_std]
@@ -29,28 +38,42 @@ use stm32f1xx_hal::{
 use usb_device::{bus::UsbBusAllocator, prelude::*};
 use usbd_hid::{descriptor::generator_prelude::*, hid_class::HIDClass};
 
-systick_monotonic!(Mono, 300);
+// 1 kHz tick → 1 ms minimum delay, matching the USB HID polling interval.
+systick_monotonic!(Mono, 1000);
 
-// Vendor-defined HID report — 10 × u16, one per ADC channel.
-// On the PC side read with hidapi: report is 20 raw bytes, each pair is one channel (little-endian).
-// Channel map: ch0=PA0, ch1=PA1 ... ch7=PA7, ch8=PB0, ch9=PB1
+// Standard USB HID Joystick — Generic Desktop page (0x01), Joystick usage (0x04).
+// Ten u16 axes; logical range 0–65535 is derived from the type by the macro.
+// ADC values (12-bit, 0–4095) are shifted left 4 to fill the full u16 range.
+//
+// Each axis gets its own USAGE local item so the HID host assigns the correct
+// usage regardless of REPORT_COUNT (local items are consumed per main item).
+// Axis usages: 0x30 X · 0x31 Y · 0x32 Z · 0x33 Rx · 0x34 Ry · 0x35 Rz
+//              0x36 Slider · 0x37 Dial · 0x38 Wheel · 0x36 Slider (2nd)
 #[gen_hid_descriptor(
-    (collection = 0x01, usage = 0x01, usage_page = 0xff00) = {
-        ch0=input; ch1=input; ch2=input; ch3=input; ch4=input;
-        ch5=input; ch6=input; ch7=input; ch8=input; ch9=input;
+    (collection = 0x01, usage_page = 0x01, usage = 0x04) = {
+        (usage = 0x30,) = { x=input;      };
+        (usage = 0x31,) = { y=input;      };
+        (usage = 0x32,) = { z=input;      };
+        (usage = 0x33,) = { rx=input;     };
+        (usage = 0x34,) = { ry=input;     };
+        (usage = 0x35,) = { rz=input;     };
+        (usage = 0x36,) = { slider=input; };
+        (usage = 0x37,) = { dial=input;   };
+        (usage = 0x38,) = { wheel=input;  };
+        (usage = 0x36,) = { slider2=input;};
     }
 )]
-pub struct SensorReport {
-    pub ch0: u16,
-    pub ch1: u16,
-    pub ch2: u16,
-    pub ch3: u16,
-    pub ch4: u16,
-    pub ch5: u16,
-    pub ch6: u16,
-    pub ch7: u16,
-    pub ch8: u16,
-    pub ch9: u16,
+pub struct JoystickReport {
+    pub x: u16,
+    pub y: u16,
+    pub z: u16,
+    pub rx: u16,
+    pub ry: u16,
+    pub rz: u16,
+    pub slider: u16,
+    pub dial: u16,
+    pub wheel: u16,
+    pub slider2: u16,
 }
 
 #[app(device = stm32f1xx_hal::pac, peripherals = true, dispatchers = [SPI1])]
@@ -103,7 +126,7 @@ mod app {
         let mut gpiob = ctx.device.GPIOB.split(&mut rcc);
         let mut gpioc = ctx.device.GPIOC.split(&mut rcc);
 
-        // Pull D+ low to force host re-enumeration when firmware is reflashed
+        // Pull D+ low to force host re-enumeration when firmware is reflashed.
         let mut usb_dp = gpioa.pa12.into_push_pull_output(&mut gpioa.crh);
         usb_dp.set_low();
         delay(rcc.clocks.sysclk().raw() / 100);
@@ -118,18 +141,19 @@ mod app {
         ctx.local.usb_bus.replace(UsbBus::new(usb));
         let usb_bus = ctx.local.usb_bus.as_ref().unwrap();
 
-        let hid = HIDClass::new(usb_bus, SensorReport::desc(), 10);
+        // 1 ms USB polling interval — maximum rate for Full Speed USB.
+        let hid = HIDClass::new(usb_bus, JoystickReport::desc(), 1);
         let usb_dev = UsbDeviceBuilder::new(usb_bus, UsbVidPid(0x16c0, 0x27dc))
             .strings(&[StringDescriptors::default()
-                .manufacturer("DIY")
-                .product("Hall Sensor HID")
+                .manufacturer("Mortara Limited")
+                .product("Hall Effect Joystick")
                 .serial_number("001")])
             .unwrap()
             .build();
 
         let mut adc1 = adc::Adc::new(ctx.device.ADC1, &mut rcc);
-        // T_239 = 239.5 ADC cycles @ 9 MHz ≈ 26.6 µs per channel. Overrides the HAL default of
-        // T_71 (~7.9 µs) which is insufficient for high-impedance Hall effect sensors to settle.
+        // T_239 = 239.5 ADC cycles @ 9 MHz ≈ 26.6 µs/channel. Overrides HAL default T_71
+        // (~7.9 µs) which is insufficient for high-impedance Hall effect sensors to settle.
         adc1.set_sample_time(adc::SampleTime::T_239);
 
         let pa0 = gpioa.pa0.into_analog(&mut gpioa.crl);
@@ -159,7 +183,7 @@ mod app {
             pb1,
         };
 
-        info!("Hall Sensor HID initialised");
+        info!("Hall Effect Joystick initialised — 1 kHz USB reports");
         read_and_report::spawn().ok();
 
         (Shared { usb_dev, hid }, Local { led, adc1, pins })
@@ -184,52 +208,63 @@ mod app {
         });
     }
 
-    // Read all 10 ADC channels and push one HID report every 10 ms.
-    #[task(local = [led, adc1, pins], shared = [hid])]
+    // Sample all 10 ADC channels and push one HID joystick report every 1 ms (1 kHz).
+    // LED and defmt console are updated every 300 reports (≈ 300 ms) to remain readable.
+    #[task(local = [led, adc1, pins, tick: u16 = 0], shared = [hid])]
     async fn read_and_report(mut ctx: read_and_report::Context) {
-        //let mut infoLoop = 0;
         loop {
             let adc = &mut *ctx.local.adc1;
             let p = &mut *ctx.local.pins;
 
-            let report = SensorReport {
-                ch0: adc.read(&mut p.pa0).unwrap_or(0),
-                ch1: adc.read(&mut p.pa1).unwrap_or(0),
-                ch2: adc.read(&mut p.pa2).unwrap_or(0),
-                ch3: adc.read(&mut p.pa3).unwrap_or(0),
-                ch4: adc.read(&mut p.pa4).unwrap_or(0),
-                ch5: adc.read(&mut p.pa5).unwrap_or(0),
-                ch6: adc.read(&mut p.pa6).unwrap_or(0),
-                ch7: adc.read(&mut p.pa7).unwrap_or(0),
-                ch8: adc.read(&mut p.pb0).unwrap_or(0),
-                ch9: adc.read(&mut p.pb1).unwrap_or(0),
+            // Shift 12-bit ADC values (0–4095) left 4 to fill the u16 range (0–65520).
+            // The descriptor's logical_max is 65535 (u16), so this fills ~99.97 % of the axis.
+            let report = JoystickReport {
+                x: adc.read(&mut p.pa0).unwrap_or(0u16) << 4,
+                y: adc.read(&mut p.pa1).unwrap_or(0u16) << 4,
+                z: adc.read(&mut p.pa2).unwrap_or(0u16) << 4,
+                rx: adc.read(&mut p.pa3).unwrap_or(0u16) << 4,
+                ry: adc.read(&mut p.pa4).unwrap_or(0u16) << 4,
+                rz: adc.read(&mut p.pa5).unwrap_or(0u16) << 4,
+                slider: adc.read(&mut p.pa6).unwrap_or(0u16) << 4,
+                dial: adc.read(&mut p.pa7).unwrap_or(0u16) << 4,
+                wheel: adc.read(&mut p.pb0).unwrap_or(0u16) << 4,
+                slider2: adc.read(&mut p.pb1).unwrap_or(0u16) << 4,
             };
 
             ctx.shared.hid.lock(|hid| {
                 hid.push_input(&report).ok();
             });
 
-            // Copy out of the packed struct before logging to avoid unaligned references.
-            let (c0, c1, c2, c3, c4, c5, c6, c7, c8, c9) = (
-                report.ch0, report.ch1, report.ch2, report.ch3, report.ch4, report.ch5, report.ch6,
-                report.ch7, report.ch8, report.ch9,
-            );
+            *ctx.local.tick += 1;
+            if *ctx.local.tick >= 300 {
+                *ctx.local.tick = 0;
 
-            //if infoLoop == 5 {
-            //    infoLoop = 0;
-            if ctx.local.led.is_set_high() {
-                ctx.local.led.set_low();
-                info!("LED OFF | pa0={:04} pa1={:04} pa2={:04} pa3={:04} pa4={:04} pa5={:04} pa6={:04} pa7={:04} pb0={:04} pb1={:04}",
-                    c0, c1, c2, c3, c4, c5, c6, c7, c8, c9);
-            } else {
-                ctx.local.led.set_high();
-                info!("LED ON  | pa0={:04} pa1={:04} pa2={:04} pa3={:04} pa4={:04} pa5={:04} pa6={:04} pa7={:04} pb0={:04} pb1={:04}",
-                    c0, c1, c2, c3, c4, c5, c6, c7, c8, c9);
+                // Copy out of the packed struct before logging to avoid unaligned references.
+                let (x, y, z, rx, ry, rz, sl, di, wh, sl2) = (
+                    report.x,
+                    report.y,
+                    report.z,
+                    report.rx,
+                    report.ry,
+                    report.rz,
+                    report.slider,
+                    report.dial,
+                    report.wheel,
+                    report.slider2,
+                );
+
+                if ctx.local.led.is_set_high() {
+                    ctx.local.led.set_low();
+                    info!("LED OFF | x={:04} y={:04} z={:04} rx={:04} ry={:04} rz={:04} sl={:04} di={:04} wh={:04} sl2={:04}",
+                        x, y, z, rx, ry, rz, sl, di, wh, sl2);
+                } else {
+                    ctx.local.led.set_high();
+                    info!("LED ON  | x={:04} y={:04} z={:04} rx={:04} ry={:04} rz={:04} sl={:04} di={:04} wh={:04} sl2={:04}",
+                        x, y, z, rx, ry, rz, sl, di, wh, sl2);
+                }
             }
-            //}
-            //infoLoop += 1;
 
-            Mono::delay(300.millis()).await;
+            Mono::delay(1.millis()).await;
         }
     }
 }
