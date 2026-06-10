@@ -1,4 +1,8 @@
 /*
+ *  Copyright (c) 2026 Mortara Ltd
+ *  Daniel Mortara <daniel.mortara@gmail.com>
+ *  2026-06-10
+ *
  * ADC + USB HID for STM32F103C8T6 (Blue Pill)
  * Samples all 10 ADC channels (PA0-PA7, PB0, PB1) and streams
  * the values to a PC as a vendor-defined HID report at 10 ms intervals.
@@ -215,11 +219,11 @@ mod app {
             //    infoLoop = 0;
             if ctx.local.led.is_set_high() {
                 ctx.local.led.set_low();
-                info!("LED OFF | pa0={} pa1={} pa2={} pa3={} pa4={} pa5={} pa6={} pa7={} pb0={} pb1={}",
+                info!("LED OFF | pa0={:04} pa1={:04} pa2={:04} pa3={:04} pa4={:04} pa5={:04} pa6={:04} pa7={:04} pb0={:04} pb1={:04}",
                     c0, c1, c2, c3, c4, c5, c6, c7, c8, c9);
             } else {
                 ctx.local.led.set_high();
-                info!("LED ON  | pa0={} pa1={} pa2={} pa3={} pa4={} pa5={} pa6={} pa7={} pb0={} pb1={}",
+                info!("LED ON  | pa0={:04} pa1={:04} pa2={:04} pa3={:04} pa4={:04} pa5={:04} pa6={:04} pa7={:04} pb0={:04} pb1={:04}",
                     c0, c1, c2, c3, c4, c5, c6, c7, c8, c9);
             }
             //}
