@@ -10,9 +10,9 @@
  */ 
 
 
-//render_part = "all";
+render_part = "all";
 //render_part = "magnet_carrier";
-render_part = "sensor_carrier";
+//render_part = "sensor_carrier";
 
 // --- Sensor package dimensions (ALS31001LUAA) ---
 sensor_z_sz = 4.0; // In mm

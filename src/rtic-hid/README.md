@@ -2,15 +2,16 @@
 
 ## Summary ##
 
-RTIC (Real Time Interrupt-driven Concurrency) provides an execution framework. It
+[RTIC](https://rtic.rs/2/book/en/)(Real Time Interrupt-driven Concurrency) provides an execution framework. It
 does not provide any Hardware Abstraction Layer (HAL)
 
 Analog Digital Converter (12 bit ADC) example using RTIC and the STM32F1xx HAL.
 
 This examples uses probe-rs and STLink v2.3 with the last available firmware version
-at the time of writing (to support RTT).
+at the time of writing to support Real-Time Transfer (RTT). 
+RTT is used stream debug logs and data with a non-blocking protocol.
 
-Analog Digital Converter (ADC) using:
+## Analog Digital Converter (ADC) using:
 
 * 10K Ohm potentiometer connected to __PA0__ (To compare to)
 * Allegro _ALS31001LUAA_ Hall effect sensor connected to ___PA1___
@@ -51,6 +52,11 @@ cargo run --bin adc0 --release
 
  Analog inputs (12bits) shifted 4 bits to the left and sent as 10 ch (16 bits)
  joystick HID report (20 bytes) to USB host using the `usbd-hid` crate.
+
+## Jig for sensor and magnets for testing
+
+Uses [OpenSCAD](https://openscad.org/) for 3D CAD modelling. 
+At this stage only the sensor/magnet jig interaction for testing and calibration.
 
 ## A bit of fiddling around with code and 3D jigs
 
