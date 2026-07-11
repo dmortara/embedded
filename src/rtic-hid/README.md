@@ -51,3 +51,9 @@ cargo run --bin adc0 --release
 
  Analog inputs (12bits) shifted 4 bits to the left and sent as 10 ch (16 bits)
  joystick HID report (20 bytes) to USB host using the `usbd-hid` crate.
+
+## A bit of fiddling around with code and 3D jigs
+
+1. A few small changes to the code to spit HID to something like a Joystick so the data can be detected
+1. A single 3D printable Jig (Open Scad) to rotate the magnetic field around the hall effect sensor
+1. A bit of the initial capture of the sensor output to plot and adjust. The rotation around the Z axis where the sensor is is well controlled but there is Jig still allows some translation of the sensor along Z as well. To be corrected in a following version of the Jig

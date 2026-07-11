@@ -451,8 +451,9 @@ dependencies = [
  "rtic-monotonics",
  "rtt-target",
  "stm32f1xx-hal",
- "usb-device",
+ "usb-device 0.3.2",
  "usbd-hid",
+ "usbd-hid-device",
 ]
 
 [[package]]
@@ -587,7 +588,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "e633d559b5fe03caed24e1df85c9fa3916fe6191fc7099ac6fcb0281f380e9f0"
 dependencies = [
  "cortex-m",
- "usb-device",
+ "usb-device 0.3.2",
  "vcell",
 ]
 
@@ -673,6 +674,12 @@ checksum = "11cd88e12b17c6494200a9c1b683a04fcac9573ed74cd1b62aeb2727c5592243"
 
 [[package]]
 name = "usb-device"
+version = "0.2.9"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "1f6cc3adc849b5292b4075fc0d5fdcf2f24866e88e336dd27a8943090a520508"
+
+[[package]]
+name = "usb-device"
 version = "0.3.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "98816b1accafbb09085168b90f27e93d790b4bfa19d883466b5e53315b5f06a6"
@@ -687,7 +694,7 @@ version = "0.10.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "68beab087e4971a2fe76f631478b0e91d39593f58efd2775026ce6dc07a7bac6"
 dependencies = [
- "usb-device",
+ "usb-device 0.3.2",
  "usbd-hid-macros",
 ]
 
@@ -698,6 +705,16 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "b297f021719c4308d5d0c61b6c1e7c6b3ba383deba774b49aa5484f996bdb8f1"
 dependencies = [
  "bitfield 0.14.0",
+]
+
+[[package]]
+name = "usbd-hid-device"
+version = "0.1.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "a6458a7119d68e106afc404af6b3a641fa03ddeaa98cda9b68a65bf3db6a98dd"
+dependencies = [
+ "embedded-hal 0.2.7",
+ "usb-device 0.2.9",
 ]
 
 [[package]]

@@ -36,7 +36,11 @@ use stm32f1xx_hal::{
     usb::{Peripheral, UsbBus, UsbBusType},
 };
 use usb_device::{bus::UsbBusAllocator, prelude::*};
-use usbd_hid::{descriptor::generator_prelude::*, hid_class::HIDClass};
+use usbd_hid::descriptor::generator_prelude::*;
+use usbd_hid::hid_class::{
+    HIDClass, HidClassSettings, HidCountryCode, HidProtocol, HidSubClass, ProtocolModeConfig,
+};
+use usbd_hid_device::USB_CLASS_HID;
 
 // 1 kHz tick → 1 ms minimum delay, matching the USB HID polling interval.
 systick_monotonic!(Mono, 1000);
@@ -49,18 +53,26 @@ systick_monotonic!(Mono, 1000);
 // usage regardless of REPORT_COUNT (local items are consumed per main item).
 // Axis usages: 0x30 X · 0x31 Y · 0x32 Z · 0x33 Rx · 0x34 Ry · 0x35 Rz
 //              0x36 Slider · 0x37 Dial · 0x38 Wheel · 0x36 Slider (2nd)
+//(usage = 0x30,) = { x=input;      };
+//(usage = 0x31,) = { y=input;      };
 #[gen_hid_descriptor(
-    (collection = 0x01, usage_page = 0x01, usage = 0x04) = {
-        (usage = 0x30,) = { x=input;      };
-        (usage = 0x31,) = { y=input;      };
-        (usage = 0x32,) = { z=input;      };
-        (usage = 0x33,) = { rx=input;     };
-        (usage = 0x34,) = { ry=input;     };
-        (usage = 0x35,) = { rz=input;     };
-        (usage = 0x36,) = { slider=input; };
-        (usage = 0x37,) = { dial=input;   };
-        (usage = 0x38,) = { wheel=input;  };
-        (usage = 0x36,) = { slider2=input;};
+    //(collection = 0x01, usage_page = 0x01, usage = 0x04) = {
+    (collection = APPLICATION, usage_page = GENERIC_DESKTOP, usage = JOYSTICK) = {
+        (collection = LOGICAL,) = {
+            (usage = X,) = { #[item_settings(data, variable, absolute)] x=input; };
+            (usage = Y,) = { #[item_settings(data, variable, absolute)] y=input;      };
+            (usage = 0x35,) = { #[item_settings(data, variable, absolute)] z=input;      };
+            (usage = 0x33,) = { rx=input;     };
+            (usage = 0x34,) = { ry=input;     };
+            (usage = 0x35,) = { rz=input;     };
+            (usage = 0x36,) = { slider=input; };
+            (usage = 0x37,) = { dial=input;   };
+            (usage = 0x38,) = { wheel=input;  };
+            (usage = 0x36,) = { slider2=input;};
+            (usage_min = 1, usage_max = 8 , usage_page = BUTTON ) = {
+                #[packed_bits = 8] buttons= input;
+            }
+        };
     }
 )]
 pub struct JoystickReport {
@@ -74,10 +86,14 @@ pub struct JoystickReport {
     pub dial: u16,
     pub wheel: u16,
     pub slider2: u16,
+    pub buttons: u8,
 }
 
-#[app(device = stm32f1xx_hal::pac, peripherals = true, dispatchers = [SPI1])]
+//#[app(device = stm32f1xx_hal::pac, peripherals = true, dispatchers = [SPI1])]
+#[app(device = stm32f1xx_hal::pac, peripherals = true)]
 mod app {
+    use HidClassSettings;
+
     use super::*;
 
     struct AnalogPins {
@@ -142,14 +158,31 @@ mod app {
         ctx.local.usb_bus.replace(UsbBus::new(usb));
         let usb_bus = ctx.local.usb_bus.as_ref().unwrap();
 
+        let hid = HIDClass::new_with_settings(
+            usb_bus,
+            JoystickReport::desc(),
+            1, // msec
+            HidClassSettings {
+                subclass: HidSubClass::NoSubClass,
+                protocol: HidProtocol::Generic,
+                config: ProtocolModeConfig::DefaultBehavior,
+                locale: HidCountryCode::US,
+            },
+        );
         // 1 ms USB polling interval — maximum rate for Full Speed USB.
-        let hid = HIDClass::new(usb_bus, JoystickReport::desc(), 1);
-        let usb_dev = UsbDeviceBuilder::new(usb_bus, UsbVidPid(0x16c0, 0x27dc))
+        //let hid = HIDClass::new(usb_bus, JoystickReport::desc(), 1);
+        //let usb_dev = UsbDeviceBuilder::new(usb_bus, UsbVidPid(0x16c0, 0x27dc))
+        let usb_dev = UsbDeviceBuilder::new(usb_bus, UsbVidPid(0x046d, 0xc215))
             .strings(&[StringDescriptors::default()
                 .manufacturer("Mortara Limited")
                 .product("Hall Effect Joystick")
                 .serial_number("001")])
             .unwrap()
+            .device_class(USB_CLASS_HID)
+            .max_power(30) // 30 mA
+            .unwrap()
+            .self_powered(false)
+            .supports_remote_wakeup(false)
             .build();
 
         let mut adc1 = adc::Adc::new(ctx.device.ADC1, &mut rcc);
@@ -230,6 +263,7 @@ mod app {
                 dial: adc.read(&mut p.pa7).unwrap_or(0u16) << 4,
                 wheel: adc.read(&mut p.pb0).unwrap_or(0u16) << 4,
                 slider2: adc.read(&mut p.pb1).unwrap_or(0u16) << 4,
+                buttons: 0,
             };
 
             ctx.shared.hid.lock(|hid| {
