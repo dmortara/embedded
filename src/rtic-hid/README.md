@@ -9,7 +9,7 @@ Analog Digital Converter (12 bit ADC) example using RTIC and the STM32F1xx HAL.
 
 This examples uses probe-rs and STLink v2.3 with the last available firmware version
 at the time of writing to support Real-Time Transfer (RTT). 
-RTT is used stream debug logs and data with a non-blocking protocol.
+RTT is used to stream debug logs and data with a non-blocking protocol.
 
 ## Analog Digital Converter (ADC) using:
 
@@ -60,8 +60,42 @@ At this stage only the sensor/magnet jig interaction for testing and calibration
 
 ![jig](mechanical/jig.png)
 
+I should have captured the axes :-( . Next time!
+
+      z        The blue rod in the z axis carries the hall effect sensor
+      |        The Coral disk moves around the blue rod freely
+      |__ x    The disc holes in the y axis carries the magets 
+     /
+    y
+
 ## A bit of fiddling around with code and 3D jigs
 
-1. A few small changes to the code to spit HID to something like a Joystick so the data can be detected
-1. A single 3D printable Jig (Open Scad) to rotate the magnetic field around the hall effect sensor
-1. A bit of the initial capture of the sensor output to plot and adjust. The rotation around the Z axis where the sensor is is well controlled but there is Jig still allows some translation of the sensor along Z as well. To be corrected in a following version of the Jig
+1. A few small changes to the code to spit the HID to something that resembles a Joystick, so the data can be detected.
+1. A single 3D file with two printable elements (Open Scad) to change the magnetic field around the hall effect sensor.
+1. A bit of the initial capture of the sensor data output to plot and adjust. The rotation around the _z_ axis where the sensor is is well controlled, but the jig still allows some unwanted translation, of the sensor, along _z_ as well. To be corrected in a following version of the Jig
+
+## Jupyter lab
+
+Looking into the sensor data output captured with [GilRs](https://docs.rs/gilrs/latest/gilrs/) pad library
+
+Install and setup uv and jupyterlab and dependencies to look into the data.
+
+```bash
+>$ uv init
+Initialized project `rtic-hid`
+
+>$uv add jupyterlab pandas numpy
+Using CPython 3.14.6 interpreter at: /usr/bin/python3.14
+Creating virtual environment at: .venv
+...
+>$ uv add --dev ipykernel
+Resolved 97 packages in 10ms
+Checked 93 packages in 0.86ms
+
+>$ uv run python -m ipykernel install --user --name=rtic-hid --display-name "Python (rtic-hid)"
+Installed kernelspec rtic-hid in /home/daniel/.local/share/jupyter/kernels/rtic-hid
+
+>$ uv run jupyter lab
+```
+```
+```
