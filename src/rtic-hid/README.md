@@ -58,6 +58,8 @@ cargo run --bin adc0 --release
 Uses [OpenSCAD](https://openscad.org/) for 3D CAD modelling. 
 At this stage only the sensor/magnet jig interaction for testing and calibration.
 
+![jig](mechanical/jig.png)
+
 ## A bit of fiddling around with code and 3D jigs
 
 1. A few small changes to the code to spit HID to something like a Joystick so the data can be detected
