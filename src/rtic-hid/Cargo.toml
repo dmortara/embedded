@@ -1,6 +1,6 @@
 [package]
-name = "rtic-blinky"
-edition = "2021"
+name = "rtic_hid"
+edition = "2024"
 version = "0.1.0"
 
 [workspace]
@@ -37,6 +37,8 @@ rtt-target = { version = "0.6" }
 #nb = "1.1.0"
 #static_cell = "2.0.0"
 panic-halt = "1.0.0"
+
+serde = { version = "1.0", default-features = false, features = ["derive"] }
 
 [profile.dev]
 opt-level = "s"

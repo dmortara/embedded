@@ -437,26 +437,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "rtic-blinky"
-version = "0.1.0"
-dependencies = [
- "cortex-m",
- "defmt",
- "defmt-rtt",
- "embedded-hal 1.0.0",
- "panic-halt",
- "panic-probe",
- "panic-rtt-target",
- "rtic",
- "rtic-monotonics",
- "rtt-target",
- "stm32f1xx-hal",
- "usb-device 0.3.2",
- "usbd-hid",
- "usbd-hid-device",
-]
-
-[[package]]
 name = "rtic-common"
 version = "1.0.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -512,6 +492,27 @@ dependencies = [
 ]
 
 [[package]]
+name = "rtic_hid"
+version = "0.1.0"
+dependencies = [
+ "cortex-m",
+ "defmt",
+ "defmt-rtt",
+ "embedded-hal 1.0.0",
+ "panic-halt",
+ "panic-probe",
+ "panic-rtt-target",
+ "rtic",
+ "rtic-monotonics",
+ "rtt-target",
+ "serde",
+ "stm32f1xx-hal",
+ "usb-device 0.3.2",
+ "usbd-hid",
+ "usbd-hid-device",
+]
+
+[[package]]
 name = "rtt-target"
 version = "0.6.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -553,6 +554,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "9a8e94ea7f378bd32cbbd37198a4a91436180c5bb472411e48b5ec2e2124ae9e"
 dependencies = [
  "serde_core",
+ "serde_derive",
 ]
 
 [[package]]
